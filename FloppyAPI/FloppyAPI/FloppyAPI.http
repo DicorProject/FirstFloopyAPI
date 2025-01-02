@@ -1,0 +1,6 @@
+@FloppyAPI_HostAddress = http://localhost:5152
+
+GET {{FloppyAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
