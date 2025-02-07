@@ -26,28 +26,30 @@ namespace Floppy.Infrastructure.Repositories
 
 			return coupons;
         }
-		#endregion
+        #endregion
 
-		#region ApplyCoupononPrice
-		public async Task<DiscountResult> ApplyCoupononPrice(coupon request)
+        #region ApplyCoupononPrice
+        public async Task<DiscountResult> ApplyCoupononPrice(coupon request)
         {
             try
             {
-                bool couponAlreadyUsed = await _context.CouponTrans
-                    .AnyAsync(t => t.UserId == request.UserId && t.CouponId == request.CouponId);
-
-                if (couponAlreadyUsed)
-                {
-                    return new DiscountResult { DiscountedPrice = 0, DiscountAmount = 0 };
-                }
-
+                // Check if the coupon exists and is active
                 var couponDetails = await _context.CouponMaster
                     .Where(x => x.CouponId == request.CouponId && x.Status == 1)
                     .FirstOrDefaultAsync();
 
                 if (couponDetails == null)
                 {
-                    throw new ArgumentException("Invalid or inactive coupon.");
+                    return null; // Coupon is invalid or inactive
+                }
+
+                // Check if the user has already used the coupon
+                bool couponAlreadyUsed = await _context.CouponTrans
+                    .AnyAsync(t => t.UserId == request.UserId && t.CouponId == request.CouponId);
+
+                if (couponAlreadyUsed)
+                {
+                    return new DiscountResult { DiscountedPrice = 0, DiscountAmount = 0 };
                 }
 
                 decimal totalPrice = (decimal)request.TotalPrice;
@@ -67,14 +69,15 @@ namespace Floppy.Infrastructure.Repositories
                 decimal discountedPrice = totalPrice - discountAmount;
                 discountedPrice = Math.Max(discountedPrice, 0);
 
-                var sql = "INSERT INTO CouponTrans (UserId, CouponId, CouponUsedDate,CouponCode) VALUES (@UserId, @CouponId, @TransactionDate,@CouponCode)";
+                // Insert the coupon usage into the database
+                var sql = "INSERT INTO CouponTrans (UserId, CouponId, CouponUsedDate, CouponCode) VALUES (@UserId, @CouponId, @TransactionDate, @CouponCode)";
                 var parameters = new[]
                 {
-                new SqlParameter("@UserId", request.UserId),
-                new SqlParameter("@CouponId", request.CouponId),
-                new SqlParameter("@TransactionDate", DateTime.UtcNow),
-                new SqlParameter("@CouponCode",request.CouponCode)
-            };
+            new SqlParameter("@UserId", request.UserId),
+            new SqlParameter("@CouponId", request.CouponId),
+            new SqlParameter("@TransactionDate", DateTime.UtcNow),
+            new SqlParameter("@CouponCode", request.CouponCode)
+        };
 
                 await _context.Database.ExecuteSqlRawAsync(sql, parameters);
 
@@ -84,14 +87,16 @@ namespace Floppy.Infrastructure.Repositories
                     DiscountAmount = discountAmount
                 };
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
-                return new DiscountResult();
-
-			}
-
+                return new DiscountResult
+                {
+                    DiscountedPrice = request.TotalPrice,
+                    DiscountAmount = 0
+                };
+            }
         }
-		#endregion
+        #endregion
 
-	}
+    }
 }

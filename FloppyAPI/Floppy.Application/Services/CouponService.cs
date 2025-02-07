@@ -58,19 +58,28 @@ namespace Floppy.Application.Services
                 // Call the method to apply the coupon and get the result
                 var discountResult = await _couponRepository.ApplyCoupononPrice(request);
 
-                if (discountResult.DiscountedPrice == 0)
+                if (discountResult == null)
+                {
+                    response.Success = false;
+                    response.Message = "Invalid or inactive coupon.";
+                    response.Data = new DiscountResult
+                    {
+                        DiscountedPrice = request.TotalPrice,
+                        DiscountAmount = 0
+                    };
+                }
+                else if (discountResult.DiscountedPrice == 0 && discountResult.DiscountAmount == 0)
                 {
                     response.Success = false;
                     response.Message = "You have already used this coupon.";
                     response.Data = new DiscountResult
                     {
                         DiscountedPrice = request.TotalPrice,
-                        DiscountAmount = 0 // No discount applied as coupon was already used
+                        DiscountAmount = 0
                     };
                 }
                 else
                 {
-                    // Coupon applied successfully, set the response data
                     response.Success = true;
                     response.Message = "Coupon applied successfully.";
                     response.Data = discountResult;
@@ -78,7 +87,6 @@ namespace Floppy.Application.Services
             }
             catch (Exception ex)
             {
-                // Handle any errors during the process
                 response.Success = false;
                 response.Message = $"An error occurred while applying the coupon: {ex.Message}";
                 response.Data = new DiscountResult

@@ -107,11 +107,12 @@ namespace Floppy.Application.Services
 							   Reviews = reviews.Where(r => r.ItemId == item.id).ToList(),
 							   Vendor = vendors.FirstOrDefault(v => v.Id == item.vendorid)
 						   })
-		                   .Where(itemWithVendor => itemWithVendor.Vendor != null
-								 && (itemWithVendor.Item.maingroupid == 7 || itemWithVendor.Item.maingroupid == 8
-									 || itemWithVendor.Vendor.Distance <= 15))
-		                        .ToList();
-					response.Success = true;
+                             .Where(itemWithVendor => itemWithVendor.Vendor != null
+        && (itemWithVendor.Item.maingroupid == 7 || itemWithVendor.Item.maingroupid == 8
+            || itemWithVendor.Vendor.Distance <= 100))
+    .OrderBy(itemWithVendor => itemWithVendor.Vendor.Distance) // Sorting in ascending order by Vendor.Distance
+    .ToList();
+                    response.Success = true;
                     response.Message = "Items and vendor details retrieved successfully";
                     response.Data = new ItemWithVendorDetailsResponse
                     {
